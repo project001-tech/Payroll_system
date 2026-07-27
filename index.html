@@ -469,7 +469,8 @@
       cursor: pointer;
     }
 
-.app-footer {
+
+    .app-footer {
       width: 100%;
       display: flex;
       justify-content: center;
@@ -482,14 +483,11 @@
       background: var(--panel);
     }
 
-    
     .app-footer strong {
       color: var(--text);
       font-weight: 700;
     }
 
-    
-    
     @media (max-width: 1050px) {
       .stats-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -551,6 +549,35 @@
         min-width: 0;
       }
     }
+
+    .table-wrap { overflow-x: auto; }
+    .data-table { width: 100%; border-collapse: collapse; min-width: 920px; }
+    .data-table th, .data-table td { padding: 13px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+    .data-table th { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; background: #f8fafc; }
+    .data-table td { font-size: 13px; }
+    .status-active { color: var(--success); font-weight: 800; }
+    .status-inactive { color: var(--danger); font-weight: 800; }
+    .btn-small { min-height: 34px; padding: 0 11px; font-size: 12px; }
+    .btn-secondary { background: #eef2ff; color: #3730a3; }
+    .btn-danger { background: #fee2e2; color: #991b1b; }
+    .user-actions { display: flex; gap: 7px; flex-wrap: wrap; }
+    .empty-state { padding: 30px; text-align: center; color: var(--muted); }
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(15,23,42,.58); display: flex; justify-content: center; align-items: center; padding: 20px; z-index: 100; }
+    .modal-card { width: min(760px, 100%); max-height: 90vh; overflow-y: auto; background: #fff; border-radius: 18px; box-shadow: 0 30px 80px rgba(0,0,0,.28); }
+    .modal-header, .modal-footer { padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .modal-header { border-bottom: 1px solid var(--line); }
+    .modal-footer { border-top: 1px solid var(--line); justify-content: flex-end; }
+    .modal-body { padding: 22px; }
+    .modal-header h3 { margin: 0; }
+    .close-modal { border: 0; background: transparent; font-size: 24px; cursor: pointer; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; }
+    .project-access-row { border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+    .project-access-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .permission-grid { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 8px; }
+    .check-label { display: flex; align-items: center; gap: 7px; font-size: 12px; }
+    .notice { padding: 12px 14px; border-radius: 10px; background: #eff6ff; color: #1e40af; font-size: 13px; margin-bottom: 16px; }
+    @media (max-width: 700px) { .form-grid { grid-template-columns: 1fr; } .permission-grid { grid-template-columns: repeat(2,1fr); } }
+
   </style>
 </head>
 
@@ -772,15 +799,37 @@
         <section id="page-thr" class="app-page hidden"></section>
         <section id="page-severance" class="app-page hidden"></section>
         <section id="page-reports" class="app-page hidden"></section>
-        <section id="page-users" class="app-page hidden"></section>
+
+        <section id="page-users" class="app-page hidden">
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <h3>Manajemen Pengguna</h3>
+                <p>Atur profil, role, status akun, dan akses project.</p>
+              </div>
+              <button id="refreshUsersButton" class="btn btn-primary" type="button">Refresh Data</button>
+            </div>
+            <div class="notice">Akun login baru dibuat melalui Supabase Authentication. Setelah akun dibuat, tekan Refresh Data lalu atur role dan akses project di halaman ini.</div>
+            <div id="usersMessage" class="message hidden"></div>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr><th>Nama</th><th>Email / Username</th><th>Role</th><th>Status</th><th>Project</th><th>Login Terakhir</th><th>Aksi</th></tr>
+                </thead>
+                <tbody id="usersTableBody"><tr><td colspan="7" class="empty-state">Memuat data pengguna...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
         <section id="page-logs" class="app-page hidden"></section>
       </div>
+
       <footer class="app-footer">
         © 2026 <strong>J S Nur Laili</strong> • HRIS Payroll &amp; Reporting System
       </footer>
     </main>
   </section>
-
 
   <script>
     // =========================================================
@@ -801,6 +850,7 @@
     let currentUser = null;
     let currentProfile = null;
     let accessibleProjects = [];
+    let managedUsers = [];
 
     const pageInformation = {
       dashboard: {
@@ -861,6 +911,11 @@
     const monthFilter = document.getElementById("monthFilter");
     const yearFilter = document.getElementById("yearFilter");
     const sidebar = document.getElementById("sidebar");
+    const usersTableBody = document.getElementById("usersTableBody");
+    const refreshUsersButton = document.getElementById("refreshUsersButton");
+    const editUserModal = document.getElementById("editUserModal");
+    const accessModal = document.getElementById("accessModal");
+
 
     // =========================================================
     // 4. HELPER
@@ -939,7 +994,7 @@
 
     function preparePlaceholderPages() {
       Object.keys(pageInformation)
-        .filter(key => key !== "dashboard")
+        .filter(key => !["dashboard", "users"].includes(key))
         .forEach(key => {
           const container = document.getElementById(`page-${key}`);
           container.innerHTML = createPlaceholder(key);
@@ -1203,6 +1258,8 @@
 
         sidebar.classList.remove("open");
 
+        if (pageKey === "users") await loadManagedUsers();
+
         await writeActivityLog(
           "OPEN_PAGE",
           pageKey.toUpperCase(),
@@ -1224,6 +1281,172 @@
       alert(
         `Filter diterapkan:\nProject: ${selectedProject}\nBulan: ${monthFilter.options[monthFilter.selectedIndex].text}\nTahun: ${yearFilter.value}`
       );
+    });
+
+    // =========================================================
+    // 9. USER MANAGEMENT
+    // =========================================================
+
+    function showInlineMessage(elementId, text, type = "error") {
+      const element = document.getElementById(elementId);
+      element.textContent = text;
+      element.className = `message ${type}`;
+    }
+
+    function hideInlineMessage(elementId) {
+      const element = document.getElementById(elementId);
+      element.textContent = "";
+      element.className = "message hidden";
+    }
+
+    function formatDateTime(value) {
+      if (!value) return "Belum pernah";
+      return new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+    }
+
+    async function loadManagedUsers() {
+      if (currentProfile?.role !== "super_admin") return;
+      usersTableBody.innerHTML = '<tr><td colspan="7" class="empty-state">Memuat data pengguna...</td></tr>';
+      hideInlineMessage("usersMessage");
+
+      const { data, error } = await db.rpc("admin_list_users");
+      if (error) {
+        console.error(error);
+        usersTableBody.innerHTML = '<tr><td colspan="7" class="empty-state">Data pengguna gagal dimuat.</td></tr>';
+        showInlineMessage("usersMessage", error.message);
+        return;
+      }
+
+      managedUsers = data || [];
+      renderManagedUsers();
+    }
+
+    function renderManagedUsers() {
+      if (!managedUsers.length) {
+        usersTableBody.innerHTML = '<tr><td colspan="7" class="empty-state">Belum ada pengguna.</td></tr>';
+        return;
+      }
+
+      usersTableBody.innerHTML = managedUsers.map(user => `
+        <tr>
+          <td><strong>${escapeHtml(user.nama_lengkap || "-")}</strong></td>
+          <td><div>${escapeHtml(user.email || "-")}</div><div style="color:var(--muted);font-size:12px">@${escapeHtml(user.username || "-")}</div></td>
+          <td>${escapeHtml(normalizeRole(user.role))}</td>
+          <td class="${user.is_active ? "status-active" : "status-inactive"}">${user.is_active ? "Aktif" : "Nonaktif"}</td>
+          <td>${Number(user.project_count || 0)}</td>
+          <td>${escapeHtml(formatDateTime(user.last_sign_in_at))}</td>
+          <td><div class="user-actions">
+            <button class="btn btn-secondary btn-small" onclick="openEditUser('${user.user_id}')">Edit</button>
+            <button class="btn btn-light btn-small" onclick="openProjectAccess('${user.user_id}')">Akses Project</button>
+          </div></td>
+        </tr>`).join("");
+    }
+
+    window.openEditUser = function(userId) {
+      const user = managedUsers.find(item => item.user_id === userId);
+      if (!user) return;
+      document.getElementById("editUserId").value = user.user_id;
+      document.getElementById("editFullName").value = user.nama_lengkap || "";
+      document.getElementById("editUsername").value = user.username || "";
+      document.getElementById("editRole").value = user.role;
+      document.getElementById("editActive").value = String(user.is_active);
+      hideInlineMessage("editUserMessage");
+      editUserModal.classList.remove("hidden");
+    };
+
+    document.getElementById("editUserForm").addEventListener("submit", async event => {
+      event.preventDefault();
+      const button = document.getElementById("saveUserButton");
+      button.disabled = true;
+      button.textContent = "Menyimpan...";
+      hideInlineMessage("editUserMessage");
+
+      const { error } = await db.rpc("admin_update_user", {
+        p_user_id: document.getElementById("editUserId").value,
+        p_nama_lengkap: document.getElementById("editFullName").value.trim(),
+        p_username: document.getElementById("editUsername").value.trim(),
+        p_role: document.getElementById("editRole").value,
+        p_is_active: document.getElementById("editActive").value === "true"
+      });
+
+      button.disabled = false;
+      button.textContent = "Simpan Perubahan";
+      if (error) {
+        showInlineMessage("editUserMessage", error.message);
+        return;
+      }
+
+      showInlineMessage("editUserMessage", "Perubahan pengguna berhasil disimpan.", "success");
+      await loadManagedUsers();
+      setTimeout(() => editUserModal.classList.add("hidden"), 500);
+    });
+
+    window.openProjectAccess = async function(userId) {
+      const user = managedUsers.find(item => item.user_id === userId);
+      if (!user) return;
+      document.getElementById("accessUserId").value = userId;
+      document.getElementById("accessUserName").textContent = `${user.nama_lengkap} • ${normalizeRole(user.role)}`;
+      document.getElementById("projectAccessList").innerHTML = '<div class="empty-state">Memuat project...</div>';
+      hideInlineMessage("accessMessage");
+      accessModal.classList.remove("hidden");
+
+      const { data, error } = await db.rpc("admin_get_user_project_access", { p_user_id: userId });
+      if (error) {
+        showInlineMessage("accessMessage", error.message);
+        return;
+      }
+
+      document.getElementById("projectAccessList").innerHTML = (data || []).map(item => `
+        <div class="project-access-row" data-project-id="${item.project_id}">
+          <div class="project-access-head">
+            <div><strong>${escapeHtml(item.kode_project)} - ${escapeHtml(item.nama_project)}</strong><div style="font-size:12px;color:var(--muted)">${item.is_active ? "Project aktif" : "Project nonaktif"}</div></div>
+            <label class="check-label"><input class="has-access" type="checkbox" ${item.has_access ? "checked" : ""}> Berikan akses</label>
+          </div>
+          <div class="permission-grid">
+            <label class="check-label"><input class="can-view" type="checkbox" ${item.can_view ? "checked" : ""}> Lihat</label>
+            <label class="check-label"><input class="can-upload" type="checkbox" ${item.can_upload ? "checked" : ""}> Upload</label>
+            <label class="check-label"><input class="can-edit" type="checkbox" ${item.can_edit ? "checked" : ""}> Edit</label>
+            <label class="check-label"><input class="can-delete" type="checkbox" ${item.can_delete ? "checked" : ""}> Delete</label>
+            <label class="check-label"><input class="can-download" type="checkbox" ${item.can_download ? "checked" : ""}> Download</label>
+          </div>
+        </div>`).join("") || '<div class="empty-state">Belum ada project. Tambahkan project terlebih dahulu.</div>';
+    };
+
+    document.getElementById("saveAccessButton").addEventListener("click", async () => {
+      const button = document.getElementById("saveAccessButton");
+      const rows = [...document.querySelectorAll(".project-access-row")];
+      const access = rows.map(row => ({
+        project_id: row.dataset.projectId,
+        has_access: row.querySelector(".has-access").checked,
+        can_view: row.querySelector(".can-view").checked,
+        can_upload: row.querySelector(".can-upload").checked,
+        can_edit: row.querySelector(".can-edit").checked,
+        can_delete: row.querySelector(".can-delete").checked,
+        can_download: row.querySelector(".can-download").checked
+      }));
+
+      button.disabled = true;
+      button.textContent = "Menyimpan...";
+      hideInlineMessage("accessMessage");
+      const { error } = await db.rpc("admin_save_all_project_access", {
+        p_user_id: document.getElementById("accessUserId").value,
+        p_access: access
+      });
+      button.disabled = false;
+      button.textContent = "Simpan Akses";
+
+      if (error) {
+        showInlineMessage("accessMessage", error.message);
+        return;
+      }
+      showInlineMessage("accessMessage", "Akses project berhasil disimpan.", "success");
+      await loadManagedUsers();
+      setTimeout(() => accessModal.classList.add("hidden"), 500);
+    });
+
+    refreshUsersButton.addEventListener("click", loadManagedUsers);
+    document.querySelectorAll("[data-close-modal]").forEach(button => {
+      button.addEventListener("click", () => document.getElementById(button.dataset.closeModal).classList.add("hidden"));
     });
 
     // =========================================================
@@ -1294,5 +1517,33 @@
 
     restoreSession();
   </script>
+
+  <div id="editUserModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header"><h3>Edit Pengguna</h3><button class="close-modal" data-close-modal="editUserModal">×</button></div>
+      <form id="editUserForm">
+        <div class="modal-body">
+          <input type="hidden" id="editUserId">
+          <div class="form-grid">
+            <div class="form-group"><label>Nama Lengkap</label><input id="editFullName" class="form-control" required></div>
+            <div class="form-group"><label>Username</label><input id="editUsername" class="form-control" required></div>
+            <div class="form-group"><label>Role</label><select id="editRole" class="form-control"><option value="super_admin">Super Admin</option><option value="admin">Admin</option><option value="payroll_support">Payroll Support</option></select></div>
+            <div class="form-group"><label>Status Akun</label><select id="editActive" class="form-control"><option value="true">Aktif</option><option value="false">Nonaktif</option></select></div>
+          </div>
+          <div id="editUserMessage" class="message hidden"></div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-close-modal="editUserModal">Batal</button><button id="saveUserButton" type="submit" class="btn btn-primary">Simpan Perubahan</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div id="accessModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header"><div><h3>Atur Akses Project</h3><div id="accessUserName" style="font-size:13px;color:var(--muted);margin-top:4px"></div></div><button class="close-modal" data-close-modal="accessModal">×</button></div>
+      <div class="modal-body"><input type="hidden" id="accessUserId"><div id="projectAccessList"></div><div id="accessMessage" class="message hidden"></div></div>
+      <div class="modal-footer"><button type="button" class="btn btn-light" data-close-modal="accessModal">Batal</button><button id="saveAccessButton" type="button" class="btn btn-primary">Simpan Akses</button></div>
+    </div>
+  </div>
+
 </body>
 </html>
