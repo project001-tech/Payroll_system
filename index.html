@@ -826,10 +826,38 @@
       </div>
 
       <footer class="app-footer">
-        © 2026 <strong>J S Nur Laili</strong> • HRIS Payroll &amp; Reporting System
+        © 2026 <strong> J S Nur Laili</strong> • HRIS Payroll &amp; Reporting System
       </footer>
     </main>
   </section>
+
+  <div id="editUserModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header"><h3>Edit Pengguna</h3><button class="close-modal" data-close-modal="editUserModal">×</button></div>
+      <form id="editUserForm">
+        <div class="modal-body">
+          <input type="hidden" id="editUserId">
+          <div class="form-grid">
+            <div class="form-group"><label>Nama Lengkap</label><input id="editFullName" class="form-control" required></div>
+            <div class="form-group"><label>Username</label><input id="editUsername" class="form-control" required></div>
+            <div class="form-group"><label>Role</label><select id="editRole" class="form-control"><option value="super_admin">Super Admin</option><option value="admin">Admin</option><option value="payroll_support">Payroll Support</option></select></div>
+            <div class="form-group"><label>Status Akun</label><select id="editActive" class="form-control"><option value="true">Aktif</option><option value="false">Nonaktif</option></select></div>
+          </div>
+          <div id="editUserMessage" class="message hidden"></div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-close-modal="editUserModal">Batal</button><button id="saveUserButton" type="submit" class="btn btn-primary">Simpan Perubahan</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div id="accessModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header"><div><h3>Atur Akses Project</h3><div id="accessUserName" style="font-size:13px;color:var(--muted);margin-top:4px"></div></div><button class="close-modal" data-close-modal="accessModal">×</button></div>
+      <div class="modal-body"><input type="hidden" id="accessUserId"><div id="projectAccessList"></div><div id="accessMessage" class="message hidden"></div></div>
+      <div class="modal-footer"><button type="button" class="btn btn-light" data-close-modal="accessModal">Batal</button><button id="saveAccessButton" type="button" class="btn btn-primary">Simpan Akses</button></div>
+    </div>
+  </div>
+
 
   <script>
     // =========================================================
@@ -837,8 +865,8 @@
     // GANTI DENGAN PROJECT URL DAN ANON/PUBLISHABLE KEY ANDA
     // =========================================================
 
-    const SUPABASE_URL = "https://dvhjaxqpoqpeyamtlvgh.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2aGpheHFwb3FwZXlhbXRsdmdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMzU1MjAsImV4cCI6MjA5MzcxMTUyMH0.qwX2LZ-9A1ZoLaqkRnZcDValUNKCYoqMvA_Vs79NkWY";
+    const SUPABASE_URL = "PASTE_SUPABASE_PROJECT_URL_DI_SINI";
+    const SUPABASE_ANON_KEY = "PASTE_SUPABASE_ANON_KEY_DI_SINI";
 
     const { createClient } = window.supabase;
     const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -1518,32 +1546,6 @@
     restoreSession();
   </script>
 
-  <div id="editUserModal" class="modal-backdrop hidden">
-    <div class="modal-card">
-      <div class="modal-header"><h3>Edit Pengguna</h3><button class="close-modal" data-close-modal="editUserModal">×</button></div>
-      <form id="editUserForm">
-        <div class="modal-body">
-          <input type="hidden" id="editUserId">
-          <div class="form-grid">
-            <div class="form-group"><label>Nama Lengkap</label><input id="editFullName" class="form-control" required></div>
-            <div class="form-group"><label>Username</label><input id="editUsername" class="form-control" required></div>
-            <div class="form-group"><label>Role</label><select id="editRole" class="form-control"><option value="super_admin">Super Admin</option><option value="admin">Admin</option><option value="payroll_support">Payroll Support</option></select></div>
-            <div class="form-group"><label>Status Akun</label><select id="editActive" class="form-control"><option value="true">Aktif</option><option value="false">Nonaktif</option></select></div>
-          </div>
-          <div id="editUserMessage" class="message hidden"></div>
-        </div>
-        <div class="modal-footer"><button type="button" class="btn btn-light" data-close-modal="editUserModal">Batal</button><button id="saveUserButton" type="submit" class="btn btn-primary">Simpan Perubahan</button></div>
-      </form>
-    </div>
-  </div>
-
-  <div id="accessModal" class="modal-backdrop hidden">
-    <div class="modal-card">
-      <div class="modal-header"><div><h3>Atur Akses Project</h3><div id="accessUserName" style="font-size:13px;color:var(--muted);margin-top:4px"></div></div><button class="close-modal" data-close-modal="accessModal">×</button></div>
-      <div class="modal-body"><input type="hidden" id="accessUserId"><div id="projectAccessList"></div><div id="accessMessage" class="message hidden"></div></div>
-      <div class="modal-footer"><button type="button" class="btn btn-light" data-close-modal="accessModal">Batal</button><button id="saveAccessButton" type="button" class="btn btn-primary">Simpan Akses</button></div>
-    </div>
-  </div>
 
 </body>
 </html>
