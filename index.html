@@ -469,6 +469,27 @@
       cursor: pointer;
     }
 
+.app-footer {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 18px 28px 24px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      border-top: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    
+    .app-footer strong {
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    
+    
     @media (max-width: 1050px) {
       .stats-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -754,11 +775,12 @@
         <section id="page-users" class="app-page hidden"></section>
         <section id="page-logs" class="app-page hidden"></section>
       </div>
-    <footer class="app-footer">
+      <footer class="app-footer">
         © 2026 <strong>J S Nur Laili</strong> • HRIS Payroll &amp; Reporting System
       </footer>
     </main>
   </section>
+
 
   <script>
     // =========================================================
